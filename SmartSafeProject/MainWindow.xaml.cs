@@ -3,7 +3,9 @@ using System;
 using System.Windows;
 using FirebirdSql.Data.FirebirdClient;
 using Microsoft.Win32;
-using System.Windows.Controls;
+using System.Windows.Media.Imaging;
+
+using SmartSafeProject.ViewModel;
 
 namespace SmartSafeProject
 {
@@ -15,42 +17,66 @@ namespace SmartSafeProject
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new MainWindowVM();
 
+            ////Подключени к БД
+            //string workingDirectory = Environment.CurrentDirectory;
+            //string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
 
-            //Подключени к БД
-            string workingDirectory = Environment.CurrentDirectory;
-            string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
-
-            string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
+            //string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
             
-            FbConnection connecting = new FbConnection(connectionString);
-            connecting.Open();
+            //FbConnection connecting = new FbConnection(connectionString);
+            //connecting.Open();
 
 
-            #region Работа с добавлением файла 
-            //открытие формы для поиска файла
-            var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
-            dialogSearchImages.InitialDirectory = $@"{projectDirectory}\files\";
-            dialogSearchImages.DefaultExt = ".JPEG"; 
-            dialogSearchImages.Filter = "Image Files|*.BMP;*.JPG;*.GIF;*.JPEG";
+            //#region Работа с добавлением файла 
+            ////открытие формы для поиска файла
+            //var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
+            //dialogSearchImages.InitialDirectory = $@"{projectDirectory}\files\";
+            //dialogSearchImages.DefaultExt = ".JPEG"; 
+            //dialogSearchImages.Filter = "Image Files|*.BMP;*.JPG;*.GIF;*.JPEG";
 
-            bool? result = dialogSearchImages.ShowDialog();
+            //bool? result = dialogSearchImages.ShowDialog();
 
-            if (result == true)
+            //if (result == true)
+            //{
+            //    //Чтение данных с файла
+            //    string fileFullPath = dialogSearchImages.FileName;
+            //    byte[] imageBytes = File.ReadAllBytes(fileFullPath);
+
+            //    BitmapImage image = LoadImage(imageBytes);
+
+            //    ImageStreamSource = image;
+
+            //    FileInfo fileInfo = new FileInfo(fileFullPath);
+            //    if (fileInfo.Exists)
+            //    {
+            //        //TODO: Надо забрать данные с файла
+            //        MessageBox.Show($"Имя файла: {fileInfo.Name}");
+            //        MessageBox.Show($"Время создания: {fileInfo.CreationTime}");
+            //        MessageBox.Show($"Размер: {fileInfo.Length}");
+            //    }
+            //}
+            //#endregion
+
+        }
+
+        private BitmapImage LoadImage(byte[] imageData)
+        {
+            if (imageData == null || imageData.Length == 0) return null;
+            var image = new BitmapImage();
+            using (var mem = new MemoryStream(imageData))
             {
-                //Чтение данных с файла
-                string fileFullPath = dialogSearchImages.FileName;
-                FileInfo fileInfo = new FileInfo(fileFullPath);
-                if (fileInfo.Exists)
-                {
-                    //TODO: Надо забрать данные с файла
-                    MessageBox.Show($"Имя файла: {fileInfo.Name}");
-                    MessageBox.Show($"Время создания: {fileInfo.CreationTime}");
-                    MessageBox.Show($"Размер: {fileInfo.Length}");
-                }
+                mem.Position = 0;
+                image.BeginInit();
+                image.CreateOptions = BitmapCreateOptions.PreservePixelFormat;
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.UriSource = null;
+                image.StreamSource = mem;
+                image.EndInit();
             }
-            #endregion
-
+            image.Freeze();
+            return image;
         }
     }
 }
