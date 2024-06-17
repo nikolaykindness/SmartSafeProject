@@ -38,6 +38,10 @@ namespace SmartSafeProject
                 window.ShowDialog();
                 this.Show();
             }
+            else
+            {
+                MessageBox.Show("Вы ввели неправильный пароль", "Авторизация", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
     }
 }
