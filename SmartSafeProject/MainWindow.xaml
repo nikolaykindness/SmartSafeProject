@@ -7,13 +7,38 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Menu>
-            <MenuItem Header="Файл">
-                <MenuItem Header="Открыть"/>
-                <MenuItem/>
-            </MenuItem>
-            <MenuItem/>
-            <MenuItem/>
-        </Menu>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <Menu HorizontalAlignment="Left"
+                  Padding="8 4">
+                <MenuItem Header="Файл">
+                    <MenuItem Header="Загрузить"
+                              Command="{Binding LoadImageDialog}"/>
+                </MenuItem>
+            </Menu>
+        </StackPanel>
+        <TabControl Grid.Row="1">
+            <TabItem Name="Gallery" Header="Галерея">
+                <ListBox ItemsSource="{Binding DataImageStreamSource}"
+                         Padding="12">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Image Source="{Binding}"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal">
+                                
+                            </WrapPanel>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                </ListBox>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>
