@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Data.Common;
-using System.Data.Entity.ModelConfiguration.Conventions;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -19,22 +14,49 @@ namespace SmartSafeProject.ViewModel
 {
     internal class MainWindowVM : INotifyPropertyChanged
     {
-        private ImageSource _imageSource;
+        #region Свойства картинок
+        private ObservableCollection<ImageSource> _dataImageStreamSource;
 
-        public ObservableCollection<ImageSource> DataImageStreamSource;
-        /*
-        public ImageSource ImageStreamSource
+        public ObservableCollection<ImageSource> DataImageStreamSource
         {
-            get { return _imageSource; }
+            get { return _dataImageStreamSource; }
             set
             {
-                _imageSource = value;
-                OnProperyChanged(nameof(ImageStreamSource));
+                _dataImageStreamSource = value;
+                OnProperyChanged(nameof(DataImageStreamSource));
             }
-        }*/
-        public ICommand LoadImageDialog => new RelayCommand(LoadImageDialogOpen);
-        string connectionString;
-        private void LoadImageDialogOpen(object obj)
+        }
+        #endregion
+
+        #region Свойства документов
+        private ObservableCollection<FILES> _docFiles;
+        private FILES _selectedDocFile;
+
+        public ObservableCollection<FILES> DocFiles
+        {
+            get { return _docFiles; }
+            set
+            {
+                _docFiles = value;
+                OnProperyChanged(nameof(DocFiles));
+            }
+        }
+
+        public FILES SelectedFile 
+        { 
+            get { return _selectedDocFile; }
+            set
+            {
+                _selectedDocFile = value;
+                OnProperyChanged(nameof(SelectedFile));
+            }
+        }
+        #endregion
+
+        public ICommand LoadFileDialog => new RelayCommand(LoadFileDialogOpen);
+        public ICommand DeleteAllFiles => new RelayCommand(DeleteAllImagesExecute);
+
+        private void LoadFileDialogOpen(object obj)
         {
             #region Работа с добавлением файла 
             string workingDirectory = Environment.CurrentDirectory;
@@ -43,8 +65,7 @@ namespace SmartSafeProject.ViewModel
             //открытие формы для поиска файла
             var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
             dialogSearchImages.InitialDirectory = $@"{projectDirectory}\files\";
-            dialogSearchImages.DefaultExt = ".JPEG";
-            dialogSearchImages.Filter = "Image Files|*.BMP;*.JPG;*.GIF;*.JPEG";
+            dialogSearchImages.Filter = "Image Files|*.bmp;*.jpg;*.gif;*.jpeg;*.png|Document Files|*.doc;*.docx;*.txt;*.rtf";
 
             bool? result = dialogSearchImages.ShowDialog();
 
@@ -65,17 +86,20 @@ namespace SmartSafeProject.ViewModel
                     //MessageBox.Show($"Размер: {fileInfo.Length}");
                 }
             }
+            else
+            {
+                return;
+            }
             #endregion
 
-
-            string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
+            string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=UTF8;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
 
             using (FbConnection connection = new FbConnection(connectionString))
             {
                 #region Добавление картинок в БД
                 connection.Open();
                 FbTransaction transaction = connection.BeginTransaction();
-                string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", DataImageStreamSource.Count + 6, fileInfo.Name, fileInfo.Extension);
+                string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", DataImageStreamSource.Count, fileInfo.Name, fileInfo.Extension);
 
                 FbCommand command = new FbCommand();
                 command.CommandText = insertQuery;
@@ -107,27 +131,158 @@ namespace SmartSafeProject.ViewModel
                 executor.Fill(queryResult);
                 #endregion 
 
-                #region Преобразование данных из БД в картинку
+                #region Преобразование данных из БД
+                DataImageStreamSource.Clear();
                 FILES model = new FILES();
 
-                if (queryResult.Rows.Count == 1)
+                if (queryResult.Rows.Count > 0)
                 {
-                    model.ID = (int)queryResult.Rows[0].ItemArray[0];
-                    model.NAME = (string)queryResult.Rows[0].ItemArray[1];
-                    model.FILETYPE = (string)queryResult.Rows[0].ItemArray[2];
-                    model.FILEDATA = (byte[])queryResult.Rows[0].ItemArray[3];
-                }
+                    for (int i = 0; i < queryResult.Rows.Count; i++)
+                    {
+                        model = new FILES();
 
-                BitmapImage image = LoadImage(model.FILEDATA);
-                DataImageStreamSource.Add(image);
+                        model.ID = (int)queryResult.Rows[i].ItemArray[0];
+                        model.NAME = (string)queryResult.Rows[i].ItemArray[1];
+                        model.FILETYPE = (string)queryResult.Rows[i].ItemArray[2];
+                        model.FILEDATA = (byte[])queryResult.Rows[i].ItemArray[3];
+
+                        if(model.FILETYPE.Contains(".bmp")
+                            || model.FILETYPE.Contains(".jpg")
+                            || model.FILETYPE.Contains(".jpeg")
+                            || model.FILETYPE.Contains(".gif")
+                            || model.FILETYPE.Contains(".png"))
+                        {
+                            BitmapImage imageSource = LoadImage(model.FILEDATA);
+                            
+                            DataImageStreamSource.Add(imageSource);
+                        }
+                        else
+                        {
+                            DocFiles.Add(model);
+                        }
+                    }
+                }
                 #endregion
+
+                connection.Close();
             }
 
+        }
+
+        private void DeleteAllImagesExecute(object obj)
+        {
+            string workingDirectory = Environment.CurrentDirectory;
+            string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+
+            string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=UTF8;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
+
+            using (FbConnection connection = new FbConnection(connectionString))
+            {
+                connection.Open();
+
+                FbTransaction transaction = connection.BeginTransaction();
+                string deleteAllQuery = "DELETE FROM Files";
+
+                FbCommand deleteAllCommand = new FbCommand();
+                deleteAllCommand.CommandText = deleteAllQuery;
+                deleteAllCommand.Transaction = transaction;
+                deleteAllCommand.Connection = connection;
+
+                // Execute query
+                deleteAllCommand.ExecuteNonQuery();
+
+                // Commit changes
+                transaction.Commit();
+
+                // Free command resources in Firebird Server
+                deleteAllCommand.Dispose();
+
+                connection.Close();
+            }
+
+            using (FbConnection connection = new FbConnection(connectionString))
+            {
+                connection.Open();
+
+                #region Получение картинок из БД
+                FbDataAdapter executor = new FbDataAdapter();
+                DataTable queryResult = new DataTable();
+
+                string selectQuery = string.Format("SELECT * FROM Files");
+                FbCommand selectCommand = new FbCommand(selectQuery, connection);
+
+                executor.SelectCommand = selectCommand;
+                executor.Fill(queryResult);
+                #endregion
+
+                #region Преобразование данных из БД в картинку
+                DataImageStreamSource.Clear();
+                FILES model = new FILES();
+
+                if (queryResult.Rows.Count > 0)
+                {
+                    for (int i = 0; i < queryResult.Rows.Count; i++)
+                    {
+                        model = new FILES();
+
+                        model.ID = (int)queryResult.Rows[i].ItemArray[0];
+                        model.NAME = (string)queryResult.Rows[i].ItemArray[1];
+                        model.FILETYPE = (string)queryResult.Rows[i].ItemArray[2];
+                        model.FILEDATA = (byte[])queryResult.Rows[i].ItemArray[3];
+
+                        BitmapImage image = LoadImage(model.FILEDATA);
+                        DataImageStreamSource.Add(image);
+                    }
+                }
+                #endregion
+            }
         }
 
         public MainWindowVM()
         {
             DataImageStreamSource = new ObservableCollection<ImageSource>();
+
+            string workingDirectory = Environment.CurrentDirectory;
+            string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
+
+            string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=UTF8;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
+
+            using (FbConnection connection = new FbConnection(connectionString))
+            {
+                connection.Open();
+
+                #region Получение картинок из БД
+                FbDataAdapter executor = new FbDataAdapter();
+                DataTable queryResult = new DataTable();
+
+                string selectQuery = string.Format("SELECT * FROM Files");
+                FbCommand selectCommand = new FbCommand(selectQuery, connection);
+
+                executor.SelectCommand = selectCommand;
+                executor.Fill(queryResult);
+                #endregion
+
+                #region Преобразование данных из БД в картинку
+                DataImageStreamSource.Clear();
+                FILES model = new FILES();
+
+                if (queryResult.Rows.Count > 0)
+                {
+                    for (int i = 0; i < queryResult.Rows.Count; i++)
+                    {
+                        model = new FILES();
+
+                        model.ID = (int)queryResult.Rows[i].ItemArray[0];
+                        model.NAME = (string)queryResult.Rows[i].ItemArray[1];
+                        model.FILETYPE = (string)queryResult.Rows[i].ItemArray[2];
+                        model.FILEDATA = (byte[])queryResult.Rows[i].ItemArray[3];
+
+                        BitmapImage image = LoadImage(model.FILEDATA);
+                        DataImageStreamSource.Add(image);
+                    }
+                }
+                #endregion
+            }
         }
 
         private BitmapImage LoadImage(byte[] imageData)

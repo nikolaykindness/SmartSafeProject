@@ -5,29 +5,36 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SmartSafeProject"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Умный сейф" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="32"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0">
+        <DockPanel Grid.Row="0">
             <Menu HorizontalAlignment="Left"
                   Padding="8 4">
                 <MenuItem Header="Файл">
                     <MenuItem Header="Загрузить"
-                              Command="{Binding LoadImageDialog}"/>
+                              Command="{Binding LoadFileDialog}"/>
                 </MenuItem>
+                <MenuItem Header="Удалить всё"
+                          Command="{Binding DeleteAllFiles}"
+                          HorizontalAlignment="Right"/>
             </Menu>
-        </StackPanel>
+        </DockPanel>
+        
         <TabControl Grid.Row="1">
-            <TabItem Name="Gallery" Header="Галерея">
+            <TabItem Name="Gallery"
+                     Header="Галерея">
                 <ListBox ItemsSource="{Binding DataImageStreamSource}"
                          Padding="12">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <Image Source="{Binding}"/>
+                            <Border Width="150" Height="150">
+                                <Image Source="{Binding}"/>
+                            </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                     <ListBox.ItemsPanel>
@@ -38,6 +45,41 @@
                         </ItemsPanelTemplate>
                     </ListBox.ItemsPanel>
                 </ListBox>
+            </TabItem>
+            <TabItem Name="Documents"
+                     Header="Документы">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!--// ВЫВОД (ЧТЕНИЕ) ФАЙЛА //-->
+                    <Border Padding="12">
+
+                        <RichTextBox x:Name="richTextBox"/>
+
+                    </Border>
+                    
+                    <!--// ВЫБОР ФАЙЛА //-->
+                    <Border Grid.Column="1"
+                            Padding="12">
+                        
+                        <StackPanel>
+                            <TextBlock Text="Выберите файл"/>
+                            <ListBox Margin="0 12 0 0"
+                                     MinHeight="300"
+                                     ItemsSource="{Binding Files}"
+                                     SelectedItem="{Binding SelectedFile, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     >
+                                <ListBox>
+                                    
+                                </ListBox>
+                            </ListBox>
+                        </StackPanel>
+                        
+                    </Border>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>

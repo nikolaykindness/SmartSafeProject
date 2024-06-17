@@ -1,8 +1,7 @@
-﻿using System.IO;
-using System;
+﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Windows;
-using FirebirdSql.Data.FirebirdClient;
-using Microsoft.Win32;
 using System.Windows.Media.Imaging;
 
 using SmartSafeProject.ViewModel;
@@ -19,12 +18,35 @@ namespace SmartSafeProject
             InitializeComponent();
             DataContext = new MainWindowVM();
 
+            Microsoft.Office.Interop.Word.Application wordObject = new Microsoft.Office.Interop.Word.Application();
+
+            string fileName = "C:\\Users\\nikol\\Desktop\\Вареников Практика Отчет.docx";
+
+            var stream = new StreamReader(fileName).BaseStream;
+
+            byte[] readBytes = System.IO.File.ReadAllBytes(fileName);
+
+            System.IO.File.WriteAllBytes($@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\New File.docx", readBytes);
+
+            /*object File = stream;
+            object nullobject = Missing.Value;
+
+            Microsoft.Office.Interop.Word.Application wordobject = new Microsoft.Office.Interop.Word.Application();
+            wordobject.DisplayAlerts = Microsoft.Office.Interop.Word.WdAlertLevel.wdAlertsNone;
+            Microsoft.Office.Interop.Word._Document docs = wordObject.Documents.Open(ref File, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject);
+            docs.ActiveWindow.Selection.WholeStory();
+            docs.ActiveWindow.Selection.Copy();
+
+            richTextBox.Paste();
+
+            docs.Close(ref nullobject, ref nullobject, ref nullobject);*/
+
             ////Подключени к БД
             //string workingDirectory = Environment.CurrentDirectory;
             //string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
 
             //string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
-            
+
             //FbConnection connecting = new FbConnection(connectionString);
             //connecting.Open();
 
