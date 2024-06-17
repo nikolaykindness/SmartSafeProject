@@ -1,13 +1,15 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
+using System.Data.Common;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-
+using FBFormAppExample;
 using FirebirdSql.Data.FirebirdClient;
 
 namespace SmartSafeProject.ViewModel
@@ -30,7 +32,7 @@ namespace SmartSafeProject.ViewModel
         {
             string workingDirectory = Environment.CurrentDirectory;
             string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
-
+            /*
             #region Работа с добавлением файла 
             //открытие формы для поиска файла
             var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
@@ -51,8 +53,6 @@ namespace SmartSafeProject.ViewModel
 
                 BitmapImage image = LoadImage(imageBytes);
 
-                ImageStreamSource = image;
-
                 fileInfo = new FileInfo(fileFullPath);
                 if (fileInfo.Exists)
                 {
@@ -63,36 +63,55 @@ namespace SmartSafeProject.ViewModel
                 }
             }
             #endregion
-
+            */
             #region Подключени к БД и запись картинки
             string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
 
-            using (FbConnection connecting = new FbConnection(connectionString))
+            using (FbConnection connection = new FbConnection(connectionString))
             {
-                string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @file_data)", fileInfo.Name, fileInfo.Extension);
-                
-                FbCommand fbcom = new FbCommand(insertQuery, connecting);
-                
-                FbParameter parBlob = new FbParameter("FileData", FbDbType.Binary);
-                parBlob.Direction = ParameterDirection.Output; parBlob.Value = imageBytes;
-                fbcom.Parameters.Add(parBlob);
+                connection.Open();
+                //FbTransaction transaction = connection.BeginTransaction();
 
-                connecting.Open();
-                fbcom.ExecuteNonQuery();
+                //string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", 5, fileInfo.Name, fileInfo.Extension);
+                
+                //FbCommand command = new FbCommand();
+                //command.CommandText = insertQuery;
+                //command.Connection = connection;
+                //command.Transaction = transaction;
+
+                //command.Parameters.Add("@FILE_DATA", FbDbType.Binary, imageBytes.Length, "FILE_DATA");
+                //command.Parameters[0].Value = imageBytes;
+
+                //// Execute query
+                //command.ExecuteNonQuery();
+
+                //// Commit changes
+                //transaction.Commit();
+
+                //// Free command resources in Firebird Server
+                //command.Dispose();
 
                 FbDataAdapter executor = new FbDataAdapter();
                 DataTable queryResult = new DataTable();
 
                 string selectQuery = string.Format("SELECT * FROM Files");
-                FbCommand selectCommand = new FbCommand(selectQuery, connecting);
+                FbCommand selectCommand = new FbCommand(selectQuery, connection);
 
                 executor.SelectCommand = selectCommand;
                 executor.Fill(queryResult);
 
-                if(queryResult.Rows.Count > 0)
-                {
+                FILES model = new FILES();
 
+                if (queryResult.Rows.Count > 0)
+                {
+                    model.ID = (int)queryResult.Rows[0].ItemArray[0];
+                    model.NAME = (string)queryResult.Rows[0].ItemArray[1];
+                    model.FILETYPE = (string)queryResult.Rows[0].ItemArray[2];
+                    model.FILEDATA = (byte[])queryResult.Rows[0].ItemArray[3];
                 }
+
+                BitmapImage image = LoadImage(model.FILEDATA);
+                ImageStreamSource = image;
             }
 
             #endregion
