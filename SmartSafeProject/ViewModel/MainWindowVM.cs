@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
 using System.Data.Common;
+using System.Data.Entity.ModelConfiguration.Conventions;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
@@ -18,6 +21,8 @@ namespace SmartSafeProject.ViewModel
     {
         private ImageSource _imageSource;
 
+        public ObservableCollection<ImageSource> DataImageStreamSource;
+        /*
         public ImageSource ImageStreamSource
         {
             get { return _imageSource; }
@@ -26,14 +31,15 @@ namespace SmartSafeProject.ViewModel
                 _imageSource = value;
                 OnProperyChanged(nameof(ImageStreamSource));
             }
-        }
-
-        public MainWindowVM()
+        }*/
+        public ICommand LoadImageDialog => new RelayCommand(LoadImageDialogOpen);
+        string connectionString;
+        private void LoadImageDialogOpen(object obj)
         {
+            #region Работа с добавлением файла 
             string workingDirectory = Environment.CurrentDirectory;
             string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
 
-            #region Работа с добавлением файла 
             //открытие формы для поиска файла
             var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
             dialogSearchImages.InitialDirectory = $@"{projectDirectory}\files\";
@@ -51,28 +57,25 @@ namespace SmartSafeProject.ViewModel
                 string fileFullPath = dialogSearchImages.FileName;
                 imageBytes = File.ReadAllBytes(fileFullPath);
 
-                BitmapImage image = LoadImage(imageBytes);
-
                 fileInfo = new FileInfo(fileFullPath);
                 if (fileInfo.Exists)
                 {
-                    //TODO: Надо забрать данные с файла
-                    MessageBox.Show($"Имя файла: {fileInfo.Name}");
-                    MessageBox.Show($"Время создания: {fileInfo.CreationTime}");
-                    MessageBox.Show($"Размер: {fileInfo.Length}");
+                    //MessageBox.Show($"Имя файла: {fileInfo.Name}");
+                    //MessageBox.Show($"Время создания: {fileInfo.CreationTime}");
+                    //MessageBox.Show($"Размер: {fileInfo.Length}");
                 }
             }
             #endregion
 
-            #region Подключени к БД и запись картинки
+
             string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
 
             using (FbConnection connection = new FbConnection(connectionString))
             {
+                #region Добавление картинок в БД
                 connection.Open();
                 FbTransaction transaction = connection.BeginTransaction();
-
-                string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", 5, fileInfo.Name, fileInfo.Extension);
+                string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", DataImageStreamSource.Count + 6, fileInfo.Name, fileInfo.Extension);
 
                 FbCommand command = new FbCommand();
                 command.CommandText = insertQuery;
@@ -85,12 +88,15 @@ namespace SmartSafeProject.ViewModel
                 // Execute query
                 command.ExecuteNonQuery();
 
+
                 // Commit changes
                 transaction.Commit();
 
                 // Free command resources in Firebird Server
                 command.Dispose();
+                #endregion
 
+                #region Получение картинок из БД
                 FbDataAdapter executor = new FbDataAdapter();
                 DataTable queryResult = new DataTable();
 
@@ -99,10 +105,12 @@ namespace SmartSafeProject.ViewModel
 
                 executor.SelectCommand = selectCommand;
                 executor.Fill(queryResult);
+                #endregion 
 
+                #region Преобразование данных из БД в картинку
                 FILES model = new FILES();
 
-                if (queryResult.Rows.Count > 0)
+                if (queryResult.Rows.Count == 1)
                 {
                     model.ID = (int)queryResult.Rows[0].ItemArray[0];
                     model.NAME = (string)queryResult.Rows[0].ItemArray[1];
@@ -111,10 +119,15 @@ namespace SmartSafeProject.ViewModel
                 }
 
                 BitmapImage image = LoadImage(model.FILEDATA);
-                ImageStreamSource = image;
+                DataImageStreamSource.Add(image);
+                #endregion
             }
 
-            #endregion
+        }
+
+        public MainWindowVM()
+        {
+            DataImageStreamSource = new ObservableCollection<ImageSource>();
         }
 
         private BitmapImage LoadImage(byte[] imageData)
