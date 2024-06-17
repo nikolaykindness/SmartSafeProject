@@ -32,7 +32,7 @@ namespace SmartSafeProject.ViewModel
         {
             string workingDirectory = Environment.CurrentDirectory;
             string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
-            /*
+
             #region Работа с добавлением файла 
             //открытие формы для поиска файла
             var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
@@ -63,33 +63,33 @@ namespace SmartSafeProject.ViewModel
                 }
             }
             #endregion
-            */
+
             #region Подключени к БД и запись картинки
             string connectionString = $@"User=sysdba;Password=masterkey;Database={projectDirectory}\SMARTSAFE.FDB;DataSource=localhost;Port=3050;Dialect=3;Charset=NONE;Role=;Connection lifetime=15;Pooling=true;MinPoolSize=0;MaxPoolSize=50;Packet Size=8192;ServerType=0;";
 
             using (FbConnection connection = new FbConnection(connectionString))
             {
                 connection.Open();
-                //FbTransaction transaction = connection.BeginTransaction();
+                FbTransaction transaction = connection.BeginTransaction();
 
-                //string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", 5, fileInfo.Name, fileInfo.Extension);
-                
-                //FbCommand command = new FbCommand();
-                //command.CommandText = insertQuery;
-                //command.Connection = connection;
-                //command.Transaction = transaction;
+                string insertQuery = string.Format(@"INSERT INTO Files (Id, Name, FileType, FileData) VALUES ({0}, '{1}', '{2}', @FILE_DATA)", 5, fileInfo.Name, fileInfo.Extension);
 
-                //command.Parameters.Add("@FILE_DATA", FbDbType.Binary, imageBytes.Length, "FILE_DATA");
-                //command.Parameters[0].Value = imageBytes;
+                FbCommand command = new FbCommand();
+                command.CommandText = insertQuery;
+                command.Connection = connection;
+                command.Transaction = transaction;
 
-                //// Execute query
-                //command.ExecuteNonQuery();
+                command.Parameters.Add("@FILE_DATA", FbDbType.Binary, imageBytes.Length, "FILE_DATA");
+                command.Parameters[0].Value = imageBytes;
 
-                //// Commit changes
-                //transaction.Commit();
+                // Execute query
+                command.ExecuteNonQuery();
 
-                //// Free command resources in Firebird Server
-                //command.Dispose();
+                // Commit changes
+                transaction.Commit();
+
+                // Free command resources in Firebird Server
+                command.Dispose();
 
                 FbDataAdapter executor = new FbDataAdapter();
                 DataTable queryResult = new DataTable();

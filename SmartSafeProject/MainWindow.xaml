@@ -7,6 +7,13 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Image Source="{Binding ImageStreamSource}"/>
+        <Menu>
+            <MenuItem Header="Файл">
+                <MenuItem Header="Открыть"/>
+                <MenuItem/>
+            </MenuItem>
+            <MenuItem/>
+            <MenuItem/>
+        </Menu>
     </Grid>
 </Window>
