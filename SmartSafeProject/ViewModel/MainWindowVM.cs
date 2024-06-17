@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using FBFormAppExample;
 using FirebirdSql.Data.FirebirdClient;
+using System.Windows.Documents;
 
 namespace SmartSafeProject.ViewModel
 {
@@ -29,6 +30,18 @@ namespace SmartSafeProject.ViewModel
         #endregion
 
         #region Свойства документов
+        private FlowDocument _flowDocument;
+
+        public FlowDocument FlowDoc
+        {
+            get { return _flowDocument; }
+            set
+            {
+                _flowDocument = value;
+                OnProperyChanged(nameof(FlowDoc));
+            }
+        }
+        
         private ObservableCollection<FILES> _docFiles;
         private FILES _selectedDocFile;
 
@@ -42,19 +55,19 @@ namespace SmartSafeProject.ViewModel
             }
         }
 
-        public FILES SelectedFile 
+        public FILES SelectedDocFile 
         { 
             get { return _selectedDocFile; }
             set
             {
                 _selectedDocFile = value;
-                OnProperyChanged(nameof(SelectedFile));
+                OnProperyChanged(nameof(SelectedDocFile));
             }
         }
         #endregion
 
         public ICommand LoadFileDialog => new RelayCommand(LoadFileDialogOpen);
-        public ICommand DeleteAllFiles => new RelayCommand(DeleteAllImagesExecute);
+        public ICommand DeleteAllFiles => new RelayCommand(DeleteAllFilesExecute);
 
         private void LoadFileDialogOpen(object obj)
         {
@@ -132,6 +145,7 @@ namespace SmartSafeProject.ViewModel
                 #endregion 
 
                 #region Преобразование данных из БД
+                DocFiles.Clear();
                 DataImageStreamSource.Clear();
                 FILES model = new FILES();
 
@@ -169,7 +183,7 @@ namespace SmartSafeProject.ViewModel
 
         }
 
-        private void DeleteAllImagesExecute(object obj)
+        private void DeleteAllFilesExecute(object obj)
         {
             string workingDirectory = Environment.CurrentDirectory;
             string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
@@ -216,6 +230,7 @@ namespace SmartSafeProject.ViewModel
                 #endregion
 
                 #region Преобразование данных из БД в картинку
+                DocFiles.Clear();
                 DataImageStreamSource.Clear();
                 FILES model = new FILES();
 
@@ -230,8 +245,20 @@ namespace SmartSafeProject.ViewModel
                         model.FILETYPE = (string)queryResult.Rows[i].ItemArray[2];
                         model.FILEDATA = (byte[])queryResult.Rows[i].ItemArray[3];
 
-                        BitmapImage image = LoadImage(model.FILEDATA);
-                        DataImageStreamSource.Add(image);
+                        if (model.FILETYPE.Contains(".bmp")
+                            || model.FILETYPE.Contains(".jpg")
+                            || model.FILETYPE.Contains(".jpeg")
+                            || model.FILETYPE.Contains(".gif")
+                            || model.FILETYPE.Contains(".png"))
+                        {
+                            BitmapImage imageSource = LoadImage(model.FILEDATA);
+
+                            DataImageStreamSource.Add(imageSource);
+                        }
+                        else
+                        {
+                            DocFiles.Add(model);
+                        }
                     }
                 }
                 #endregion
@@ -241,6 +268,7 @@ namespace SmartSafeProject.ViewModel
         public MainWindowVM()
         {
             DataImageStreamSource = new ObservableCollection<ImageSource>();
+            DocFiles = new ObservableCollection<FILES>();
 
             string workingDirectory = Environment.CurrentDirectory;
             string projectDirectory = Directory.GetParent(workingDirectory).Parent.Parent.FullName;
@@ -262,7 +290,8 @@ namespace SmartSafeProject.ViewModel
                 executor.Fill(queryResult);
                 #endregion
 
-                #region Преобразование данных из БД в картинку
+                #region Преобразование данных из БД
+                DocFiles.Clear();
                 DataImageStreamSource.Clear();
                 FILES model = new FILES();
 
@@ -277,8 +306,20 @@ namespace SmartSafeProject.ViewModel
                         model.FILETYPE = (string)queryResult.Rows[i].ItemArray[2];
                         model.FILEDATA = (byte[])queryResult.Rows[i].ItemArray[3];
 
-                        BitmapImage image = LoadImage(model.FILEDATA);
-                        DataImageStreamSource.Add(image);
+                        if (model.FILETYPE.Contains(".bmp")
+                            || model.FILETYPE.Contains(".jpg")
+                            || model.FILETYPE.Contains(".jpeg")
+                            || model.FILETYPE.Contains(".gif")
+                            || model.FILETYPE.Contains(".png"))
+                        {
+                            BitmapImage imageSource = LoadImage(model.FILEDATA);
+
+                            DataImageStreamSource.Add(imageSource);
+                        }
+                        else
+                        {
+                            DocFiles.Add(model);
+                        }
                     }
                 }
                 #endregion

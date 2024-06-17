@@ -2,8 +2,10 @@
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media.Imaging;
-
+using FBFormAppExample;
 using SmartSafeProject.ViewModel;
 
 namespace SmartSafeProject
@@ -22,14 +24,14 @@ namespace SmartSafeProject
 
             string fileName = "C:\\Users\\nikol\\Desktop\\Вареников Практика Отчет.docx";
 
-            var stream = new StreamReader(fileName).BaseStream;
+            //var stream = new StreamReader(fileName).BaseStream;
 
-            byte[] readBytes = System.IO.File.ReadAllBytes(fileName);
+            //byte[] readBytes = System.IO.File.ReadAllBytes(fileName);
 
-            System.IO.File.WriteAllBytes($@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\New File.docx", readBytes);
+            //File.WriteAllBytes($@"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\New File.docx", readBytes);
 
-            /*object File = stream;
-            object nullobject = Missing.Value;
+            //object File = stream;
+            /*object nullobject = Missing.Value;
 
             Microsoft.Office.Interop.Word.Application wordobject = new Microsoft.Office.Interop.Word.Application();
             wordobject.DisplayAlerts = Microsoft.Office.Interop.Word.WdAlertLevel.wdAlertsNone;
@@ -38,6 +40,7 @@ namespace SmartSafeProject
             docs.ActiveWindow.Selection.Copy();
 
             richTextBox.Paste();
+            richTextBox.Document = new System.Windows.Documents.FlowDocument();
 
             docs.Close(ref nullobject, ref nullobject, ref nullobject);*/
 
@@ -99,6 +102,56 @@ namespace SmartSafeProject
             }
             image.Freeze();
             return image;
+        }
+
+        private void DocListBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            FILES file = (FILES)((ListBox)sender).SelectedItem;
+
+            string path = string.Empty;
+
+            if(file != null)
+            {
+                if (file.FILETYPE.Contains(".docx"))
+                {
+                    path = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\Temp_Doc.docx";
+
+                    System.IO.File.WriteAllBytes(path, file.FILEDATA);
+
+                    object File = path;
+                    object nullobject = Missing.Value;
+
+                    Microsoft.Office.Interop.Word.Application wordObject = new Microsoft.Office.Interop.Word.Application();
+                    wordObject.DisplayAlerts = Microsoft.Office.Interop.Word.WdAlertLevel.wdAlertsNone;
+                    Microsoft.Office.Interop.Word._Document docs = wordObject.Documents.Open(ref File, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject, ref nullobject);
+
+                    docs.ActiveWindow.Selection.WholeStory();
+                    docs.ActiveWindow.Selection.Copy();
+
+                    docRichTextBox.Paste();
+
+                    docs.Close();
+                    wordObject.Quit();
+                }
+                else if (file.FILETYPE.Contains(".txt"))
+                {
+                    path = $@"{Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)}\Temp_Doc.txt";
+
+                    File.WriteAllBytes(path, file.FILEDATA);
+
+                    FlowDocument flowDocument = new FlowDocument();
+
+                    using (var fs = new FileStream(path, FileMode.Open))
+                    {
+                        var range = new TextRange(flowDocument.ContentStart, flowDocument.ContentEnd);
+                        range.Load(fs, DataFormats.Text);
+                    }
+
+                    docRichTextBox.Document = flowDocument;
+                }
+
+                File.Delete(path);
+            }
         }
     }
 }
