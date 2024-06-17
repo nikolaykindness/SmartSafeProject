@@ -110,7 +110,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ApplicationContext.cs" />
+    <Compile Include="FILES.cs" />
     <Compile Include="DbModel.cs" />
+    <Compile Include="FilesModel.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

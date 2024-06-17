@@ -2,20 +2,27 @@
 using System;
 using System.Windows;
 using FirebirdSql.Data.FirebirdClient;
+using System.Data.Entity.Infrastructure;
+using EntityFramework.Firebird;
+using EntityFramework;
 using Microsoft.Win32;
 using System.Windows.Controls;
+using System.Data.Entity.Core.Objects;
+using System.Data.Entity;
 
 namespace SmartSafeProject
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    /// 
+
+  
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
-
 
             //Подключени к БД
             string workingDirectory = Environment.CurrentDirectory;
@@ -25,6 +32,10 @@ namespace SmartSafeProject
             
             FbConnection connecting = new FbConnection(connectionString);
             connecting.Open();
+
+            //Получаем контекст
+            var dbContext = AppVariables.CreateDbContext();
+
 
 
             #region Работа с добавлением файла 
