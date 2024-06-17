@@ -27,7 +27,7 @@ namespace SmartSafeProject
             connecting.Open();
 
 
-
+            #region Работа с добавлением файла 
             //открытие формы для поиска файла
             var dialogSearchImages = new Microsoft.Win32.OpenFileDialog();
             dialogSearchImages.InitialDirectory = $@"{projectDirectory}\files\";
@@ -49,6 +49,7 @@ namespace SmartSafeProject
                     MessageBox.Show($"Размер: {fileInfo.Length}");
                 }
             }
+            #endregion
 
         }
     }
